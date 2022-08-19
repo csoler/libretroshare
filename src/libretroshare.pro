@@ -761,8 +761,9 @@ SOURCES += 	tor/AddOnionCommand.cpp \
 
 # gxs tunnels
 HEADERS += gxstunnel/p3gxstunnel.h \
-			  gxstunnel/rsgxstunnelitems.h \
-			  retroshare/rsgxstunnel.h
+	   gxstunnel/rsgxstunnelitems.h \
+	   gxstunnel/p3gxsconnectedgroup.h \
+	   retroshare/rsgxstunnel.h
 
 SOURCES += gxstunnel/p3gxstunnel.cc \
 				gxstunnel/rsgxstunnelitems.cc 
