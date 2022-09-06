@@ -468,6 +468,8 @@ public:
 
 struct ChatMessage : RsSerializable
 {
+    ChatMessage(): chatflags(0),sendTime(0),recvTime(0),incoming(false),online(false){}
+
     ChatId chat_id; // id of chat endpoint
     RsPeerId broadcast_peer_id; // only used for broadcast chat: source peer id
     RsGxsId lobby_peer_gxs_id; // only used for lobbys: nickname of message author
@@ -497,6 +499,47 @@ struct ChatMessage : RsSerializable
 		RS_SERIAL_PROCESS(online);
 	}
 };
+
+enum class RsChatMessageEventCode: uint8_t {
+    UNKNOWN                                 = 0x00,
+    NEW_MESSAGE_RECEIVED                    = 0x01,
+    PEER_CHAT_STATUS_CHANGED                = 0x02, // peer is ONLINE vs. OFFLINE
+    PEER_CUSTOM_STATE_CHANGED               = 0x03, // peer custom state message
+    PEER_IS_TYPING                          = 0x04, // used to display typing status
+    OWN_STATUS_CHANGED                      = 0x05,
+    CHAT_FONTS_CHANGED                      = 0x06,
+    DISTANT_CHAT_CONNECTION_REFUSED         = 0x07,
+    DISTANT_CHAT_CONNECTION_OK              = 0x08,
+    DISTANT_CHAT_CONNECTION_NONE            = 0x09,
+    DISTANT_CHAT_CONNECTION_REMOTELY_CLOSED = 0x0a,
+};
+
+struct RsChatMessageEvent : RsEvent
+{
+    RsChatMessageEvent()
+        : RsEvent(RsEventType::CHAT_MESSAGE),
+          mEventCode(RsChatMessageEventCode::UNKNOWN),
+          mPeerStatus(0)
+        {}
+    ~RsChatMessageEvent() override = default;
+
+    ///* @see RsEvent @see RsSerializable
+    void serial_process( RsGenericSerializer::SerializeJob j, RsGenericSerializer::SerializeContext& ctx ) override
+    {
+        RsEvent::serial_process(j, ctx);
+
+        RS_SERIAL_PROCESS(mEventCode);
+        RS_SERIAL_PROCESS(mChatMessage);
+        RS_SERIAL_PROCESS(mStatusString);
+        RS_SERIAL_PROCESS(mPeerStatus);
+    }
+
+    RsChatMessageEventCode  mEventCode;
+    ChatMessage             mChatMessage;
+    std::string 			mStatusString;
+    int						mPeerStatus;
+};
+
 
 class ChatLobbyInvite : RsSerializable
 {

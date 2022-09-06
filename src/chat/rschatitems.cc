@@ -63,7 +63,7 @@ RsItem *RsChatSerialiser::create_item(uint16_t service_id,uint8_t item_sub_id) c
 
 void RsChatMsgItem::serial_process(RsGenericSerializer::SerializeJob j,RsGenericSerializer::SerializeContext& ctx)
 {
-    RsTypeSerializer::serial_process(j,ctx,chatFlags,"chatflags") ;
+    RS_SERIAL_PROCESS(chatFlags);
     RsTypeSerializer::serial_process(j,ctx,sendTime,"sendTime") ;
     RsTypeSerializer::serial_process(j,ctx,TLV_TYPE_STR_MSG,message,"message") ;
 }
@@ -147,7 +147,7 @@ void RsPrivateChatMsgConfigItem::serial_process(RsGenericSerializer::SerializeJo
 
     RsTypeSerializer::serial_process<uint32_t>(j,ctx,                 x,           "place holder value") ;
     RsTypeSerializer::serial_process          (j,ctx,                 configPeerId,"configPeerId") ;
-    RsTypeSerializer::serial_process<uint32_t>(j,ctx,                 chatFlags,   "chatFlags") ;
+    RS_SERIAL_PROCESS(chatFlags);
     RsTypeSerializer::serial_process<uint32_t>(j,ctx,                 sendTime,    "sendTime") ;
     RsTypeSerializer::serial_process          (j,ctx,TLV_TYPE_STR_MSG,message,     "message") ;
     RsTypeSerializer::serial_process<uint32_t>(j,ctx,                 recvTime,    "recvTime") ;
@@ -155,7 +155,7 @@ void RsPrivateChatMsgConfigItem::serial_process(RsGenericSerializer::SerializeJo
 
 void RsChatStatusItem::serial_process(RsGenericSerializer::SerializeJob j,RsGenericSerializer::SerializeContext& ctx)
 {
-    RsTypeSerializer::serial_process(j,ctx,flags,"flags") ;
+    RS_SERIAL_PROCESS(flags);
     RsTypeSerializer::serial_process(j,ctx,TLV_TYPE_STR_MSG,status_string,"status_string") ;
 }
 

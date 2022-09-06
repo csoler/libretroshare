@@ -103,7 +103,7 @@ void p3ChatService::sendPublicChat(const std::string &msg)
 	    RsChatMsgItem *ci = new RsChatMsgItem();
 
 	    ci->PeerId(*it);
-	    ci->chatFlags = RS_CHAT_FLAG_PUBLIC;
+        ci->chatFlags = RsChatStatusItemFlags::RS_CHAT_FLAG_PUBLIC;
 	    ci->sendTime = time(NULL);
 	    ci->recvTime = ci->sendTime;
 	    ci->message = msg;
@@ -122,8 +122,16 @@ void p3ChatService::sendPublicChat(const std::string &msg)
 		    initChatMessage(ci, message);
 		    message.incoming = false;
 		    message.online = true;
-		    RsServer::notify()->notifyChatMessage(message);
 		    mHistoryMgr->addMessage(message);
+
+            if(rsEvents)
+            {
+                auto ev = std::make_shared<RsChatMessageEvent>();
+                ev->mEventCode = RsChatMessageEventCode::NEW_MESSAGE_RECEIVED;
+                ev->mChatMessage = message;
+                rsEvents->postEvent(ev);
+            }
+
 	    }
 	    else
 		    checkSizeAndSendMessage(ci);
@@ -207,7 +215,7 @@ void p3ChatService::sendGroupChatStatusString(const std::string& status_string)
 		RsChatStatusItem *cs = new RsChatStatusItem ;
 
 		cs->status_string = status_string ;
-		cs->flags = RS_CHAT_FLAG_PUBLIC ;
+        cs->flags = RsChatStatusItemFlags::RS_CHAT_FLAG_PUBLIC ;
 
 		cs->PeerId(*it);
 
@@ -231,7 +239,7 @@ void p3ChatService::sendStatusString( const ChatId& id,
 			RsChatStatusItem *cs = new RsChatStatusItem;
 
 			cs->status_string = status_string;
-			cs->flags = RS_CHAT_FLAG_PRIVATE;
+            cs->flags = RsChatStatusItemFlags::RS_CHAT_FLAG_PRIVATE;
 			cs->PeerId(vpid);
 
 #ifdef CHAT_DEBUG
@@ -251,7 +259,7 @@ void p3ChatService::sendStatusString( const ChatId& id,
 
 void p3ChatService::clearChatLobby(const ChatId& id)
 {
-	RsServer::notify()->notifyChatCleared(id);
+    RsServer::notify()->notifyChatLobbyCleared(id);
 }
 
 void p3ChatService::sendChatItem(RsChatItem *item)
@@ -286,14 +294,14 @@ void p3ChatService::checkSizeAndSendMessage(RsChatMsgItem *msg)
 		// Clear out any one time flags that should not be copied into multiple objects. This is 
 		// a precaution, in case the receivign peer does not yet handle split messages transparently.
 		//
-		item->chatFlags &= (RS_CHAT_FLAG_PRIVATE | RS_CHAT_FLAG_PUBLIC | RS_CHAT_FLAG_LOBBY) ;
+        item->chatFlags &= (RsChatStatusItemFlags::RS_CHAT_FLAG_PRIVATE | RsChatStatusItemFlags::RS_CHAT_FLAG_PUBLIC | RsChatStatusItemFlags::RS_CHAT_FLAG_LOBBY) ;
 
 #ifdef CHAT_DEBUG
 		std::cerr << "Creating slice of size " << item->message.size() << std::endl;
 #endif
 		// Indicate that the message is to be continued.
 		//
-		item->chatFlags |= RS_CHAT_FLAG_PARTIAL_MESSAGE ;
+        item->chatFlags |= RsChatStatusItemFlags::RS_CHAT_FLAG_PARTIAL_MESSAGE ;
 		sendChatItem(item) ;
 	}
 #ifdef CHAT_DEBUG
@@ -339,7 +347,7 @@ bool p3ChatService::sendChat(ChatId destination, std::string msg)
 
     RsChatMsgItem *ci = new RsChatMsgItem();
     ci->PeerId(vpid);
-    ci->chatFlags = RS_CHAT_FLAG_PRIVATE;
+    ci->chatFlags = RsChatStatusItemFlags::RS_CHAT_FLAG_PRIVATE;
     ci->sendTime = time(NULL);
     ci->recvTime = ci->sendTime;
     ci->message = msg;
@@ -352,7 +360,14 @@ bool p3ChatService::sendChat(ChatId destination, std::string msg)
 	if(!isOnline(vpid)  && !destination.isDistantChatId())
 	{
 		message.online = false;
-		RsServer::notify()->notifyChatMessage(message);
+
+        if(rsEvents)
+        {
+            auto ev = std::make_shared<RsChatMessageEvent>();
+            ev->mEventCode = RsChatMessageEventCode::NEW_MESSAGE_RECEIVED;
+            ev->mChatMessage = message;
+            rsEvents->postEvent(ev);
+        }
 
 		// use the history to load pending messages to the gui
 		// this is not very nice, because the user may think the message was send, while it is still in the queue
@@ -410,7 +425,7 @@ bool p3ChatService::sendChat(ChatId destination, std::string msg)
             std::cerr << "p3ChatService::sendChat: new avatar never sent to peer " << vpid << ". Setting <new> flag to packet." << std::endl;
 #endif
 
-            ci->chatFlags |= RS_CHAT_FLAG_AVATAR_AVAILABLE ;
+            ci->chatFlags |= RsChatStatusItemFlags::RS_CHAT_FLAG_AVATAR_AVAILABLE ;
             it->second->_own_is_new = false ;
         }
     }
@@ -423,8 +438,14 @@ bool p3ChatService::sendChat(ChatId destination, std::string msg)
     std::cerr << std::endl;
 #endif
 
-    RsServer::notify()->notifyChatMessage(message);
-    
+    if(rsEvents)
+    {
+        auto ev = std::make_shared<RsChatMessageEvent>();
+        ev->mEventCode = RsChatMessageEventCode::NEW_MESSAGE_RECEIVED;
+        ev->mChatMessage = message;
+        rsEvents->postEvent(ev);
+    }
+
     // cyril: history is temporarily disabled for distant chat, since we need to store the full tunnel ID, but then
     // at loading time, the ID is not known so that chat window shows 00000000 as a peer.
     
@@ -479,7 +500,7 @@ bool p3ChatService::locked_checkAndRebuildPartialMessage(RsChatMsgItem *& ci)
 	//
 	std::map<RsPeerId,RsChatMsgItem*>::iterator it = _pendingPartialMessages.find(ci->PeerId()) ;
 
-	bool ci_is_incomplete = ci->chatFlags & RS_CHAT_FLAG_PARTIAL_MESSAGE ;
+    bool ci_is_incomplete = !!(ci->chatFlags & RsChatStatusItemFlags::RS_CHAT_FLAG_PARTIAL_MESSAGE );
 
 	if(it != _pendingPartialMessages.end())
 	{
@@ -622,7 +643,7 @@ uint32_t p3ChatService::getMaxMessageSecuritySize(int type)
 bool p3ChatService::checkForMessageSecurity(RsChatMsgItem *ci)
 {
 	// Remove too big messages
-	if (ci->chatFlags & RS_CHAT_FLAG_LOBBY)
+    if (!!(ci->chatFlags & RsChatStatusItemFlags::RS_CHAT_FLAG_LOBBY))
 	{
 		uint32_t maxMessageSize = getMaxMessageSecuritySize(RS_CHAT_TYPE_LOBBY);
 		if (maxMessageSize > 0 && ci->message.length() > maxMessageSize)
@@ -692,7 +713,7 @@ bool p3ChatService::checkForMessageSecurity(RsChatMsgItem *ci)
 	// corrupted by a friend before sending them that can result in e.g. lobby
 	// messages ending up in the broadcast channel, etc.
 	
-	uint32_t fl = ci->chatFlags & (RS_CHAT_FLAG_PRIVATE | RS_CHAT_FLAG_PUBLIC | RS_CHAT_FLAG_LOBBY) ;
+    auto fl = ci->chatFlags & (RsChatStatusItemFlags::RS_CHAT_FLAG_PRIVATE | RsChatStatusItemFlags::RS_CHAT_FLAG_PUBLIC | RsChatStatusItemFlags::RS_CHAT_FLAG_LOBBY) ;
 
 #ifdef CHAT_DEBUG
 	std::cerr << "Checking msg flags: " << std::hex << fl << std::endl;
@@ -700,12 +721,12 @@ bool p3ChatService::checkForMessageSecurity(RsChatMsgItem *ci)
 
 	if(dynamic_cast<RsChatLobbyMsgItem*>(ci) != NULL)
 	{
-		if(fl != (RS_CHAT_FLAG_PRIVATE | RS_CHAT_FLAG_LOBBY))
+        if(fl != (RsChatStatusItemFlags::RS_CHAT_FLAG_PRIVATE | RsChatStatusItemFlags::RS_CHAT_FLAG_LOBBY))
 			std::cerr << "Warning: received chat lobby message with iconsistent flags " << std::hex << fl << std::dec << " from friend peer " << ci->PeerId() << std::endl;
 
-		ci->chatFlags &= ~RS_CHAT_FLAG_PUBLIC ;
+        ci->chatFlags &= ~RsChatStatusItemFlags::RS_CHAT_FLAG_PUBLIC ;
 	}
-	else if(fl!=0 && !(fl == RS_CHAT_FLAG_PRIVATE || fl == RS_CHAT_FLAG_PUBLIC))	// The !=0 is normally not needed, but we keep it for 
+    else if(((uint32_t)fl)!=0 && !(fl == RsChatStatusItemFlags::RS_CHAT_FLAG_PRIVATE || fl == RsChatStatusItemFlags::RS_CHAT_FLAG_PUBLIC))	// The !=0 is normally not needed, but we keep it for
 	{																										// a while, for backward compatibility. It's not harmful.
 		std::cerr << "Warning: received chat lobby message with iconsistent flags " << std::hex << fl << std::dec << " from friend peer " << ci->PeerId() << std::endl;
 
@@ -834,9 +855,9 @@ bool p3ChatService::handleRecvChatMsgItem(RsChatMsgItem *& ci)
 
     // Now treat normal chat stuff such as avatar requests, except for chat lobbies.
 
-    if( !(ci->chatFlags & RS_CHAT_FLAG_LOBBY))
+    if( !(ci->chatFlags & RsChatStatusItemFlags::RS_CHAT_FLAG_LOBBY))
     {
-        if(ci->chatFlags & RS_CHAT_FLAG_REQUESTS_AVATAR) 	// no msg here. Just an avatar request.
+        if(!!(ci->chatFlags & RsChatStatusItemFlags::RS_CHAT_FLAG_REQUESTS_AVATAR)) 	// no msg here. Just an avatar request.
         {
             sendAvatarJpegData(ci->PeerId()) ;
             return false ;
@@ -845,13 +866,13 @@ bool p3ChatService::handleRecvChatMsgItem(RsChatMsgItem *& ci)
         // normal msg. Return it normally.
         // Check if new avatar is available at peer's. If so, send a request to get the avatar.
 
-        if((ci->chatFlags & RS_CHAT_FLAG_AVATAR_AVAILABLE) && !(ci->chatFlags & RS_CHAT_FLAG_LOBBY))
+        if((!!(ci->chatFlags & RsChatStatusItemFlags::RS_CHAT_FLAG_AVATAR_AVAILABLE)) && !(ci->chatFlags & RsChatStatusItemFlags::RS_CHAT_FLAG_LOBBY))
         {
 #ifdef CHAT_DEBUG
             std::cerr << "New avatar is available for peer " << ci->PeerId() << ", sending request" << std::endl ;
 #endif
             sendAvatarRequest(ci->PeerId()) ;
-            ci->chatFlags &= ~RS_CHAT_FLAG_AVATAR_AVAILABLE ;
+            ci->chatFlags &= ~RsChatStatusItemFlags::RS_CHAT_FLAG_AVATAR_AVAILABLE ;
         }
 
         std::map<RsPeerId,AvatarInfo *>::const_iterator it = _avatars.find(ci->PeerId()) ;
@@ -866,15 +887,15 @@ bool p3ChatService::handleRecvChatMsgItem(RsChatMsgItem *& ci)
 #ifdef CHAT_DEBUG
             std::cerr << "Avatar is new for peer. ending info above" << std::endl ;
 #endif
-            ci->chatFlags |= RS_CHAT_FLAG_AVATAR_AVAILABLE ;
+            ci->chatFlags |= RsChatStatusItemFlags::RS_CHAT_FLAG_AVATAR_AVAILABLE ;
         }
     }
 
     std::string message = ci->message;
 
-    if(!(ci->chatFlags & RS_CHAT_FLAG_LOBBY))
+    if(!(ci->chatFlags & RsChatStatusItemFlags::RS_CHAT_FLAG_LOBBY))
     {
-        if(ci->chatFlags & RS_CHAT_FLAG_PRIVATE)
+        if(!!(ci->chatFlags & RsChatStatusItemFlags::RS_CHAT_FLAG_PRIVATE))
             RsServer::notify()->AddPopupMessage(popupChatFlag, ci->PeerId().toStdString(), name, message); /* notify private chat message */
         else
         {
@@ -895,17 +916,16 @@ bool p3ChatService::handleRecvChatMsgItem(RsChatMsgItem *& ci)
     initChatMessage(ci, cm);
     cm.incoming = true;
     cm.online = true;
-    RsServer::notify()->notifyChatMessage(cm);
-    
-	mHistoryMgr->addMessage(cm);
 
 	if(rsEvents)
 	{
 		auto ev = std::make_shared<RsChatMessageEvent>();
-		ev->mChatMessage = cm;
+        ev->mEventCode = RsChatMessageEventCode::NEW_MESSAGE_RECEIVED;
+        ev->mChatMessage = cm;
 		rsEvents->postEvent(ev);
 	}
-    
+    mHistoryMgr->addMessage(cm);
+
     return true ;
 }
 
@@ -924,14 +944,24 @@ void p3ChatService::handleRecvChatStatusItem(RsChatStatusItem *cs)
 
     DistantChatPeerInfo dcpinfo;
 
-	if(cs->flags & RS_CHAT_FLAG_REQUEST_CUSTOM_STATE) 	// no state here just a request.
+    if(!!(cs->flags & RsChatStatusItemFlags::RS_CHAT_FLAG_REQUEST_CUSTOM_STATE)) 	// no state here just a request.
 		sendCustomState(cs->PeerId()) ;
-	else if(cs->flags & RS_CHAT_FLAG_CUSTOM_STATE)		// Check if new custom string is available at peer's. 
+    else if(!!(cs->flags & RsChatStatusItemFlags::RS_CHAT_FLAG_CUSTOM_STATE))		// Check if new custom string is available at peer's.
 	{ 																	// If so, send a request to get the custom string.
 		receiveStateString(cs->PeerId(),cs->status_string) ;	// store it
-		RsServer::notify()->notifyCustomState(cs->PeerId().toStdString(), cs->status_string) ;
+        // RsServer::notify()->notifyCustomState(cs->PeerId().toStdString(), cs->status_string) ;
+
+        if(rsEvents)
+        {
+            auto ev = std::make_shared<RsChatMessageEvent>();
+            ev->mEventCode = RsChatMessageEventCode::PEER_CUSTOM_STATE_CHANGED;
+            ev->mStatusString = cs->status_string;
+            ev->mChatMessage.chat_id = ChatId(DistantChatPeerId(cs->PeerId()));
+            std::cerr << "Sending custom state changed, string=\"" << cs->status_string << "\"" << std::endl;
+            rsEvents->postEvent(ev);
+        }
 	}
-	else if(cs->flags & RS_CHAT_FLAG_CUSTOM_STATE_AVAILABLE)
+    else if(!!(cs->flags & RsChatStatusItemFlags::RS_CHAT_FLAG_CUSTOM_STATE_AVAILABLE))
 	{
 #ifdef CHAT_DEBUG
 		std::cerr << "New custom state is available for peer " << cs->PeerId() << ", sending request" << std::endl ;
@@ -940,17 +970,64 @@ void p3ChatService::handleRecvChatStatusItem(RsChatStatusItem *cs)
 	}
     else if(DistantChatService::getDistantChatStatus(DistantChatPeerId(cs->PeerId()), dcpinfo))
     {
-        RsServer::notify()->notifyChatStatus(ChatId(DistantChatPeerId(cs->PeerId())), cs->status_string) ;
+        //RsServer::notify()->notifyChatStatus(ChatId(DistantChatPeerId(cs->PeerId())), cs->status_string) ;
+
+        if(rsEvents)
+        {
+            auto ev = std::make_shared<RsChatMessageEvent>();
+
+            if(cs->status_string == "is typing...")
+                ev->mEventCode = RsChatMessageEventCode::PEER_IS_TYPING;
+            else
+                ev->mEventCode = RsChatMessageEventCode::PEER_CHAT_STATUS_CHANGED;
+
+            ev->mStatusString = cs->status_string;
+            ev->mChatMessage.chat_id = ChatId(DistantChatPeerId(cs->PeerId()));
+            rsEvents->postEvent(ev);
+
+            std::cerr << "Sending status event \"" << cs->status_string << "\" for peer " << cs->PeerId() << std::endl;
+        }
     }
-	else if(cs->flags & RS_CHAT_FLAG_PRIVATE)
+    else if(!!(cs->flags & RsChatStatusItemFlags::RS_CHAT_FLAG_PRIVATE))
 	{
-        RsServer::notify()->notifyChatStatus(ChatId(cs->PeerId()),cs->status_string) ;
+        // RsServer::notify()->notifyChatStatus(ChatId(cs->PeerId()),cs->status_string) ;
+
+        if(rsEvents)
+        {
+            auto ev = std::make_shared<RsChatMessageEvent>();
+
+            if(cs->status_string == "is typing...")
+                ev->mEventCode = RsChatMessageEventCode::PEER_IS_TYPING;
+            else
+                ev->mEventCode = RsChatMessageEventCode::PEER_CHAT_STATUS_CHANGED;
+
+            ev->mStatusString = cs->status_string;
+            ev->mChatMessage.chat_id = ChatId(cs->PeerId());
+            rsEvents->postEvent(ev);
+        }
+
 	}
-	else if(cs->flags & RS_CHAT_FLAG_PUBLIC)
+    else if(!!(cs->flags & RsChatStatusItemFlags::RS_CHAT_FLAG_PUBLIC))
     {
         ChatId id = ChatId::makeBroadcastId();
         id.broadcast_status_peer_id = cs->PeerId();
-        RsServer::notify()->notifyChatStatus(id, cs->status_string) ;
+
+        // RsServer::notify()->notifyChatStatus(id, cs->status_string) ;
+
+        if(rsEvents)
+        {
+            auto ev = std::make_shared<RsChatMessageEvent>();
+
+            if(cs->status_string == "is typing...")
+                ev->mEventCode = RsChatMessageEventCode::PEER_IS_TYPING;
+            else
+                ev->mEventCode = RsChatMessageEventCode::PEER_CHAT_STATUS_CHANGED;
+
+            ev->mStatusString = cs->status_string;
+            ev->mChatMessage.chat_id = id;
+            rsEvents->postEvent(ev);
+        }
+
     }
 
 	DistantChatService::handleRecvChatStatusItem(cs) ;
@@ -976,7 +1053,7 @@ void p3ChatService::initChatMessage(RsChatMsgItem *c, ChatMessage &m)
     if(DistantChatService::getDistantChatStatus(DistantChatPeerId(c->PeerId()), dcpinfo))
         m.chat_id = ChatId(DistantChatPeerId(c->PeerId()));
 
-    if (c -> chatFlags & RS_CHAT_FLAG_PRIVATE)
+    if (!!(c -> chatFlags & RsChatStatusItemFlags::RS_CHAT_FLAG_PRIVATE))
         m.chatflags |= RS_CHAT_PRIVATE;
     else
     {
@@ -1003,14 +1080,21 @@ void p3ChatService::setOwnCustomStateString(const std::string& s)
 		mServiceCtrl->getPeersConnected(getServiceInfo().mServiceType, onlineList);
 	}
 
-	RsServer::notify()->notifyOwnStatusMessageChanged() ;
+    // RsServer::notify()->notifyOwnStatusMessageChanged() ;
+
+    if(rsEvents)
+    {
+        auto ev = std::make_shared<RsChatMessageEvent>();
+        ev->mEventCode = RsChatMessageEventCode::OWN_STATUS_CHANGED;
+        rsEvents->postEvent(ev);
+    }
 
 	// alert your online peers to your newly set status
 	std::set<RsPeerId>::iterator it(onlineList.begin());
 	for(; it != onlineList.end(); ++it){
 
 		RsChatStatusItem *cs = new RsChatStatusItem();
-		cs->flags = RS_CHAT_FLAG_CUSTOM_STATE_AVAILABLE;
+        cs->flags = RsChatStatusItemFlags::RS_CHAT_FLAG_CUSTOM_STATE_AVAILABLE;
 		cs->status_string = "";
 		cs->PeerId(*it);
 		sendItem(cs);
@@ -1179,7 +1263,7 @@ void p3ChatService::sendAvatarRequest(const RsPeerId& peer_id)
 	RsChatMsgItem *ci = new RsChatMsgItem();
 
 	ci->PeerId(peer_id);
-	ci->chatFlags = RS_CHAT_FLAG_PRIVATE | RS_CHAT_FLAG_REQUESTS_AVATAR ;
+    ci->chatFlags = RsChatStatusItemFlags::RS_CHAT_FLAG_PRIVATE | RsChatStatusItemFlags::RS_CHAT_FLAG_REQUESTS_AVATAR ;
 	ci->sendTime = time(NULL);
 	ci->message.erase();
 
@@ -1199,7 +1283,7 @@ void p3ChatService::sendCustomStateRequest(const RsPeerId& peer_id){
 	RsChatStatusItem* cs = new RsChatStatusItem;
 
 	cs->PeerId(peer_id);
-	cs->flags = RS_CHAT_FLAG_PRIVATE | RS_CHAT_FLAG_REQUEST_CUSTOM_STATE ;
+    cs->flags = RsChatStatusItemFlags::RS_CHAT_FLAG_PRIVATE | RsChatStatusItemFlags::RS_CHAT_FLAG_REQUEST_CUSTOM_STATE ;
 	cs->status_string.erase();
 
 #ifdef CHAT_DEBUG
@@ -1215,7 +1299,7 @@ RsChatStatusItem *p3ChatService::makeOwnCustomStateStringItem()
 	RsStackMutex stack(mChatMtx); /********** STACK LOCKED MTX ******/
 	RsChatStatusItem *ci = new RsChatStatusItem();
 
-	ci->flags = RS_CHAT_FLAG_CUSTOM_STATE ;
+    ci->flags = RsChatStatusItemFlags::RS_CHAT_FLAG_CUSTOM_STATE ;
 	ci->status_string = _custom_status_string ;
 
 	return ci ;
@@ -1329,7 +1413,7 @@ bool p3ChatService::loadList(std::list<RsItem*>& load)
 		{
 			RS_STACK_MUTEX(mChatMtx);
 
-			if ( citem->chatFlags & RS_CHAT_FLAG_PRIVATE )
+            if (!!(citem->chatFlags & RsChatStatusItemFlags::RS_CHAT_FLAG_PRIVATE ))
 			{
 				if ( std::find(ssl_peers.begin(), ssl_peers.end(),
 				               citem->configPeerId) != ssl_peers.end() )
@@ -1388,7 +1472,7 @@ bool p3ChatService::saveList(bool& cleanup, std::list<RsItem*>& list)
 
 	RsChatStatusItem *di = new RsChatStatusItem ;
 	di->status_string = _custom_status_string ;
-	di->flags = RS_CHAT_FLAG_CUSTOM_STATE ;
+    di->flags = RsChatStatusItemFlags::RS_CHAT_FLAG_CUSTOM_STATE ;
 
 	list.push_back(di);
 
@@ -1453,8 +1537,14 @@ void p3ChatService::statusChange(const std::list<pqiServicePeer> &plist)
 				initChatMessage(*toIt, message);
 				message.incoming = false;
 				message.online = true;
-				RsServer::notify()->notifyChatMessage(message);
 
+                if(rsEvents)
+                {
+                    auto ev = std::make_shared<RsChatMessageEvent>();
+                    ev->mEventCode = RsChatMessageEventCode::NEW_MESSAGE_RECEIVED;
+                    ev->mChatMessage = message;
+                    rsEvents->postEvent(ev);
+                }
 				checkSizeAndSendMessage(*toIt); // delete item
 			}
 

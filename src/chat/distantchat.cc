@@ -115,20 +115,29 @@ bool DistantChatService::handleOutgoingItem(RsChatItem *item)
 
 void DistantChatService::handleRecvChatStatusItem(RsChatStatusItem *cs)
 {
-    if(cs->flags & RS_CHAT_FLAG_CONNEXION_REFUSED)
+    if(!!(cs->flags & RsChatStatusItemFlags::RS_CHAT_FLAG_CONNEXION_REFUSED))
     {
 #ifdef DEBUG_DISTANT_CHAT    
         DISTANT_CHAT_DEBUG() << "(II) Distant chat: received notification that peer refuses conversation." << std::endl;
 #endif
-        RsServer::notify()->notifyChatStatus(ChatId(DistantChatPeerId(cs->PeerId())),"Connexion refused by distant peer!") ;
+        //RsServer::notify()->notifyChatStatus(ChatId(DistantChatPeerId(cs->PeerId())),"Connexion refused by distant peer!") ;
+
+        if(rsEvents)
+        {
+            auto ev = std::make_shared<RsChatMessageEvent>();
+            ev->mEventCode = RsChatMessageEventCode::DISTANT_CHAT_CONNECTION_REFUSED;
+            ev->mChatMessage.chat_id = ChatId(DistantChatPeerId(cs->PeerId()));
+            rsEvents->postEvent(ev);
+        }
+
     }
 
-    if(cs->flags & RS_CHAT_FLAG_CLOSING_DISTANT_CONNECTION)
+    if(!!(cs->flags & RsChatStatusItemFlags::RS_CHAT_FLAG_CLOSING_DISTANT_CONNECTION))
         markDistantChatAsClosed(DistantChatPeerId(cs->PeerId())) ;
 
     // nothing more to do, because the decryption routing will update the last_contact time when decrypting.
 
-    if(cs->flags & RS_CHAT_FLAG_KEEP_ALIVE)
+    if(!!(cs->flags & RsChatStatusItemFlags::RS_CHAT_FLAG_KEEP_ALIVE))
         std::cerr << "DistantChatService::handleRecvChatStatusItem(): received keep alive packet for inactive chat! peerId=" << cs->PeerId() << std::endl;
 }
 
@@ -151,7 +160,7 @@ bool DistantChatService::acceptDataFromPeer(const RsGxsId& gxs_id,const RsGxsTun
 	    DISTANT_CHAT_DEBUG() << "(II) refusing distant chat from peer " << gxs_id << ". Sending a notification back to tunnel " << tunnel_id << std::endl;
 #endif
 	    RsChatStatusItem *item = new RsChatStatusItem ;
-	    item->flags = RS_CHAT_FLAG_CONNEXION_REFUSED ;
+        item->flags = RsChatStatusItemFlags::RS_CHAT_FLAG_CONNEXION_REFUSED ;
 	    item->status_string.clear() ; // is not used yet! But could be set in GUI to some message (??).
 	    item->PeerId(RsPeerId(tunnel_id)) ;
 
@@ -188,19 +197,81 @@ void DistantChatService::notifyTunnelStatus( const RsGxsTunnelId& tunnel_id, uin
     {
     default:
     case RsGxsTunnelService::RS_GXS_TUNNEL_STATUS_UNKNOWN: 		std::cerr << "(EE) don't know how to handle RS_GXS_TUNNEL_STATUS_UNKNOWN !" << std::endl;
-        								break ;
-        
-    case RsGxsTunnelService::RS_GXS_TUNNEL_STATUS_CAN_TALK:    	RsServer::notify()->notifyChatStatus(ChatId(DistantChatPeerId(tunnel_id)),"Tunnel is secured. You can talk!") ;
-        								RsServer::notify()->notifyPeerStatusChanged(tunnel_id.toStdString(),RS_STATUS_ONLINE) ;
-                            						break ;
-                            
-    case RsGxsTunnelService::RS_GXS_TUNNEL_STATUS_TUNNEL_DN:    	RsServer::notify()->notifyChatStatus(ChatId(DistantChatPeerId(tunnel_id)),"Tunnel is down...") ;
-			        					RsServer::notify()->notifyPeerStatusChanged(tunnel_id.toStdString(),RS_STATUS_OFFLINE) ;
-        								break ;
-        
-    case RsGxsTunnelService::RS_GXS_TUNNEL_STATUS_REMOTELY_CLOSED:	RsServer::notify()->notifyChatStatus(ChatId(DistantChatPeerId(tunnel_id)),"Tunnel is down...") ;
-        								RsServer::notify()->notifyPeerStatusChanged(tunnel_id.toStdString(),RS_STATUS_OFFLINE) ;
-                            						break ;
+        break ;
+
+    case RsGxsTunnelService::RS_GXS_TUNNEL_STATUS_CAN_TALK:
+    {
+        //RsServer::notify()->notifyPeerStatusChanged(tunnel_id.toStdString(),RS_STATUS_ONLINE) ;
+        //RsServer::notify()->notifyChatStatus(ChatId(DistantChatPeerId(tunnel_id)),"Tunnel is secured. You can talk!") ;
+
+        if(rsEvents)
+        {
+            auto ev = std::make_shared<RsChatMessageEvent>();
+            ev->mEventCode = RsChatMessageEventCode::DISTANT_CHAT_CONNECTION_OK;
+            ev->mChatMessage.chat_id = ChatId(DistantChatPeerId(RsPeerId(tunnel_id)));
+            rsEvents->postEvent(ev);
+        }
+
+        if(rsEvents)
+        {
+            auto ev = std::make_shared<RsChatMessageEvent>();
+            ev->mEventCode = RsChatMessageEventCode::PEER_CHAT_STATUS_CHANGED;
+            ev->mPeerStatus = RS_STATUS_ONLINE;
+            ev->mChatMessage.chat_id = ChatId(DistantChatPeerId(RsPeerId(tunnel_id)));
+            rsEvents->postEvent(ev);
+        }
+    }
+        break ;
+
+    case RsGxsTunnelService::RS_GXS_TUNNEL_STATUS_TUNNEL_DN:
+    {
+        //	RsServer::notify()->notifyPeerStatusChanged(tunnel_id.toStdString(),RS_STATUS_OFFLINE) ;
+        //  RsServer::notify()->notifyChatStatus(ChatId(DistantChatPeerId(tunnel_id)),"Tunnel is down...") ;
+
+        if(rsEvents)
+        {
+            auto ev = std::make_shared<RsChatMessageEvent>();
+            ev->mEventCode = RsChatMessageEventCode::DISTANT_CHAT_CONNECTION_NONE;
+            ev->mChatMessage.chat_id = ChatId(DistantChatPeerId(RsPeerId(tunnel_id)));
+            rsEvents->postEvent(ev);
+        }
+
+        if(rsEvents)
+        {
+            auto ev = std::make_shared<RsChatMessageEvent>();
+            ev->mEventCode = RsChatMessageEventCode::PEER_CHAT_STATUS_CHANGED;
+            ev->mPeerStatus = RS_STATUS_OFFLINE;
+            ev->mChatMessage.chat_id = ChatId(DistantChatPeerId(RsPeerId(tunnel_id)));
+            rsEvents->postEvent(ev);
+        }
+    }
+        break ;
+
+    case RsGxsTunnelService::RS_GXS_TUNNEL_STATUS_REMOTELY_CLOSED:
+    {
+        //RsServer::notify()->notifyChatStatus(ChatId(DistantChatPeerId(tunnel_id)),"Tunnel is down...") ;
+        //RsServer::notify()->notifyPeerStatusChanged(tunnel_id.toStdString(),RS_STATUS_OFFLINE) ;
+        // break ;
+
+        if(rsEvents)
+        {
+            auto ev = std::make_shared<RsChatMessageEvent>();
+            ev->mEventCode = RsChatMessageEventCode::DISTANT_CHAT_CONNECTION_REMOTELY_CLOSED;
+            ev->mChatMessage.chat_id = ChatId(DistantChatPeerId(RsPeerId(tunnel_id)));
+            rsEvents->postEvent(ev);
+        }
+
+        if(rsEvents)
+        {
+            auto ev = std::make_shared<RsChatMessageEvent>();
+            ev->mEventCode = RsChatMessageEventCode::PEER_CHAT_STATUS_CHANGED;
+            ev->mPeerStatus = RS_STATUS_OFFLINE;
+            ev->mChatMessage.chat_id = ChatId(DistantChatPeerId(RsPeerId(tunnel_id)));
+            rsEvents->postEvent(ev);
+        }
+
+    }
+        break;
     }
 }
 
@@ -281,7 +352,7 @@ bool DistantChatService::initiateDistantChatConnexion(
 		RsChatMsgItem *item = new RsChatMsgItem;
 		item->message = "[Starting distant chat. Please wait for secure tunnel";
 		item->message += " to be established]";
-		item->chatFlags = RS_CHAT_FLAG_PRIVATE;
+        item->chatFlags = RsChatStatusItemFlags::RS_CHAT_FLAG_PRIVATE;
 		item->sendTime = time(NULL);
 		item->PeerId(RsPeerId(tunnel_id));
 		handleRecvChatMsgItem(item);

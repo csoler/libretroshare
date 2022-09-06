@@ -198,9 +198,17 @@ bool p3StatusService::sendStatus(const RsPeerId &id, uint32_t status)
 	}
 
 	/* send notify of own status change */
-	RsServer::notify()->notifyPeerStatusChanged(statusInfo.id.toStdString(), statusInfo.status);
+    //RsServer::notify()->notifyPeerStatusChanged(statusInfo.id.toStdString(), statusInfo.status);
 
-	return true;
+    if(rsEvents)
+    {
+        auto ev = std::make_shared<RsChatMessageEvent>();
+        ev->mEventCode = RsChatMessageEventCode::PEER_CHAT_STATUS_CHANGED;
+        ev->mChatMessage.chat_id = ChatId(statusInfo.id);
+        ev->mPeerStatus = statusInfo.status;
+        rsEvents->postEvent(ev);
+    }
+    return true;
 }
 
 /******************************/
@@ -254,11 +262,23 @@ void p3StatusService::receiveStatusQueue()
 
 	} /* UNLOCKED */
 
-	if (changed.size()) {
+    if (changed.size())
+    {
 		std::map<RsPeerId, uint32_t>::iterator it;
-		for (it = changed.begin(); it != changed.end(); ++it) {
-			RsServer::notify()->notifyPeerStatusChanged(it->first.toStdString(), it->second);
-		}
+        for (it = changed.begin(); it != changed.end(); ++it)
+        {
+            //RsServer::notify()->notifyPeerStatusChanged(it->first.toStdString(), it->second);
+
+            if(rsEvents)
+            {
+                auto ev = std::make_shared<RsChatMessageEvent>();
+                ev->mEventCode = RsChatMessageEventCode::PEER_CHAT_STATUS_CHANGED;
+                ev->mChatMessage.chat_id = ChatId(it->first);
+                ev->mPeerStatus = it->second;
+                rsEvents->postEvent(ev);
+            }
+        }
+
 		RsServer::notify()->notifyPeerStatusChangedSummary();
 	}
 }
@@ -368,7 +388,16 @@ void p3StatusService::statusChange(const std::list<pqiServicePeer> &plist)
 			} /* UNLOCKED */
 
 			changedState = true;
-			RsServer::notify()->notifyPeerStatusChanged(it->id.toStdString(), RS_STATUS_OFFLINE);
+            // RsServer::notify()->notifyPeerStatusChanged(it->id.toStdString(), RS_STATUS_OFFLINE);
+
+            if(rsEvents)
+            {
+                auto ev = std::make_shared<RsChatMessageEvent>();
+                ev->mEventCode = RsChatMessageEventCode::PEER_CHAT_STATUS_CHANGED;
+                ev->mChatMessage.chat_id = ChatId(it->id);
+                ev->mPeerStatus = RS_STATUS_OFFLINE;
+                rsEvents->postEvent(ev);
+            }
 		}
 
 		if (it->actions & RS_SERVICE_PEER_CONNECTED) 
@@ -392,8 +421,18 @@ void p3StatusService::statusChange(const std::list<pqiServicePeer> &plist)
 			} /* UNLOCKED */
 
 			changedState = true;
-			RsServer::notify()->notifyPeerStatusChanged(it->id.toStdString(), RS_STATUS_ONLINE);
-		}
+            //RsServer::notify()->notifyPeerStatusChanged(it->id.toStdString(), RS_STATUS_ONLINE);
+
+            if(rsEvents)
+            {
+                auto ev = std::make_shared<RsChatMessageEvent>();
+                ev->mEventCode = RsChatMessageEventCode::PEER_CHAT_STATUS_CHANGED;
+                ev->mChatMessage.chat_id = ChatId(it->id);
+                ev->mPeerStatus = RS_STATUS_ONLINE;
+                rsEvents->postEvent(ev);
+            }
+
+        }
 
 		if (it->actions & RS_SERVICE_PEER_REMOVED) 
 		{
@@ -405,7 +444,17 @@ void p3StatusService::statusChange(const std::list<pqiServicePeer> &plist)
 			} /* UNLOCKED */
 
 			changedState = true;
-			RsServer::notify()->notifyPeerStatusChanged(it->id.toStdString(), RS_STATUS_OFFLINE);
+            //RsServer::notify()->notifyPeerStatusChanged(it->id.toStdString(), RS_STATUS_OFFLINE);
+
+            if(rsEvents)
+            {
+                auto ev = std::make_shared<RsChatMessageEvent>();
+                ev->mEventCode = RsChatMessageEventCode::PEER_CHAT_STATUS_CHANGED;
+                ev->mChatMessage.chat_id = ChatId(it->id);
+                ev->mPeerStatus = RS_STATUS_OFFLINE;
+                rsEvents->postEvent(ev);
+            }
+
 		}
 	}
 

@@ -1077,7 +1077,7 @@ bool DistributedChatService::sendLobbyChat(const ChatLobbyId& lobby_id, const st
 
         // chat msg stuff
         //
-        item.chatFlags = RS_CHAT_FLAG_LOBBY | RS_CHAT_FLAG_PRIVATE;
+        item.chatFlags = RsChatStatusItemFlags::RS_CHAT_FLAG_LOBBY | RsChatStatusItemFlags::RS_CHAT_FLAG_PRIVATE;
         item.sendTime = time(NULL);
         item.recvTime = item.sendTime;
         item.message = msg;
@@ -1102,8 +1102,15 @@ bool DistributedChatService::sendLobbyChat(const ChatLobbyId& lobby_id, const st
     message.sendTime = item.sendTime;
     message.incoming = false;
     message.online = true;
-    RsServer::notify()->notifyChatMessage(message);
     mHistMgr->addMessage(message);
+
+    if(rsEvents)
+    {
+        auto ev = std::make_shared<RsChatMessageEvent>();
+        ev->mChatMessage = message;
+        ev->mEventCode = RsChatMessageEventCode::NEW_MESSAGE_RECEIVED;
+        rsEvents->postEvent(ev);
+    }
 
 	return true ;
 }
@@ -1486,7 +1493,7 @@ bool DistributedChatService::acceptLobbyInvite(const ChatLobbyId& lobby_id,const
         	item->nick = "Chat room management" ;
 		item->message = std::string("Welcome to chat lobby") ;
 		item->PeerId(entry.virtual_peer_id) ;
-		item->chatFlags = RS_CHAT_FLAG_PRIVATE | RS_CHAT_FLAG_LOBBY ;
+        item->chatFlags = RsChatStatusItemFlags::RS_CHAT_FLAG_PRIVATE | RsChatStatusItemFlags::RS_CHAT_FLAG_LOBBY ;
 
 		locked_storeIncomingMsg(item) ;
 	}

@@ -37,20 +37,25 @@
 #include "retroshare/rsmsgs.h"
 
 /* chat Flags */
-const uint32_t RS_CHAT_FLAG_PRIVATE                    = 0x0001;
-const uint32_t RS_CHAT_FLAG_REQUESTS_AVATAR            = 0x0002;
-const uint32_t RS_CHAT_FLAG_CONTAINS_AVATAR            = 0x0004;
-const uint32_t RS_CHAT_FLAG_AVATAR_AVAILABLE           = 0x0008;
-const uint32_t RS_CHAT_FLAG_CUSTOM_STATE               = 0x0010;  // used for transmitting peer status string
-const uint32_t RS_CHAT_FLAG_PUBLIC                     = 0x0020;
-const uint32_t RS_CHAT_FLAG_REQUEST_CUSTOM_STATE       = 0x0040;
-const uint32_t RS_CHAT_FLAG_CUSTOM_STATE_AVAILABLE     = 0x0080;
-const uint32_t RS_CHAT_FLAG_PARTIAL_MESSAGE            = 0x0100;
-const uint32_t RS_CHAT_FLAG_LOBBY                      = 0x0200;
-const uint32_t RS_CHAT_FLAG_CLOSING_DISTANT_CONNECTION = 0x0400;
-const uint32_t RS_CHAT_FLAG_ACK_DISTANT_CONNECTION     = 0x0800;
-const uint32_t RS_CHAT_FLAG_KEEP_ALIVE                 = 0x1000;
-const uint32_t RS_CHAT_FLAG_CONNEXION_REFUSED          = 0x2000;
+
+enum class RsChatStatusItemFlags: uint32_t {
+    RS_CHAT_FLAG_PRIVATE                    = 0x0001,
+    RS_CHAT_FLAG_REQUESTS_AVATAR            = 0x0002,
+    RS_CHAT_FLAG_CONTAINS_AVATAR            = 0x0004,
+    RS_CHAT_FLAG_AVATAR_AVAILABLE           = 0x0008,
+    RS_CHAT_FLAG_CUSTOM_STATE               = 0x0010, // used for transmitting peer status string
+    RS_CHAT_FLAG_PUBLIC                     = 0x0020,
+    RS_CHAT_FLAG_REQUEST_CUSTOM_STATE       = 0x0040,
+    RS_CHAT_FLAG_CUSTOM_STATE_AVAILABLE     = 0x0080,
+    RS_CHAT_FLAG_PARTIAL_MESSAGE            = 0x0100,
+    RS_CHAT_FLAG_LOBBY                      = 0x0200,
+    RS_CHAT_FLAG_CLOSING_DISTANT_CONNECTION = 0x0400,
+    RS_CHAT_FLAG_ACK_DISTANT_CONNECTION     = 0x0800,
+    RS_CHAT_FLAG_KEEP_ALIVE                 = 0x1000,
+    RS_CHAT_FLAG_CONNEXION_REFUSED          = 0x2000,
+};
+
+RS_REGISTER_ENUM_FLAGS_TYPE(RsChatStatusItemFlags)
 
 const uint32_t RS_CHATMSG_CONFIGFLAG_INCOMING 		= 0x0001;
 
@@ -121,7 +126,7 @@ public:
 	void serial_process(RsGenericSerializer::SerializeJob j,RsGenericSerializer::SerializeContext& ctx);
     virtual void clear() {}
 
-    uint32_t chatFlags;
+    RsChatStatusItemFlags chatFlags;
     uint32_t sendTime;
     std::string message;
 
@@ -292,7 +297,7 @@ struct RsPrivateChatMsgConfigItem : RsChatItem
 	void get(RsChatMsgItem *ci);
 
 	RsPeerId configPeerId;
-	uint32_t chatFlags;
+    RsChatStatusItemFlags chatFlags;
 	uint32_t configFlags;
 	uint32_t sendTime;
 	std::string message;
@@ -338,7 +343,7 @@ class RsChatStatusItem: public RsChatItem
 
 		void serial_process(RsGenericSerializer::SerializeJob j,RsGenericSerializer::SerializeContext& ctx);
 
-		uint32_t flags ;
+        RsChatStatusItemFlags flags ;
 		std::string status_string;
 };
 
