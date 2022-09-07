@@ -186,6 +186,7 @@ enum class RsSharedDirectoriesEventCode: uint8_t {
     SAVING_FILE_INDEX           = 0x04, // (void)
     EXTRA_LIST_FILE_ADDED       = 0x05, // (void)
     EXTRA_LIST_FILE_REMOVED     = 0x06, // (void)
+    HASHING_FILE_COMPLETED      = 0x07, // (void)
 };
 
 enum class RsFileTransferEventCode: uint8_t {
@@ -194,8 +195,7 @@ enum class RsFileTransferEventCode: uint8_t {
     COMPLETED_FILES_REMOVED     = 0x02,	//
 };
 
-struct RS_DEPRECATED_FOR("Packing arbitrary data into an std::string is bad idea")
-RsSharedDirectoriesEvent: RsEvent
+struct  RsSharedDirectoriesEvent: RsEvent
 {
 	RsSharedDirectoriesEvent()  : RsEvent(RsEventType::SHARED_DIRECTORIES), mEventCode(RsSharedDirectoriesEventCode::UNKNOWN) {}
 	~RsSharedDirectoriesEvent() override = default;
@@ -206,13 +206,24 @@ RsSharedDirectoriesEvent: RsEvent
 		RsEvent::serial_process(j, ctx);
 
 		RS_SERIAL_PROCESS(mEventCode);
-		RS_SERIAL_PROCESS(mMessage);
-	}
+        RS_SERIAL_PROCESS(mFileName);
+        RS_SERIAL_PROCESS(mHashCounter) ;
+        RS_SERIAL_PROCESS(mTotalFilesToHash);
+        RS_SERIAL_PROCESS(mTotalSizeToHash) ;
+        RS_SERIAL_PROCESS(mTotalHashedSize) ;
+        RS_SERIAL_PROCESS(mCurrentHashingSpeed);
+    }
 
     RsSharedDirectoriesEventCode mEventCode;
-    std::string mMessage;
+    std::string mFileName;
+    uint64_t mHashCounter ;
+    uint64_t mTotalFilesToHash;
+    uint64_t mTotalSizeToHash ;
+    uint64_t mTotalHashedSize ;
+    uint32_t mCurrentHashingSpeed;
 };
 
+#ifdef TO_REMOVE
 struct RsFileHashingCompletedEvent: RsEvent
 {
 	RsFileHashingCompletedEvent():
@@ -237,6 +248,7 @@ struct RsFileHashingCompletedEvent: RsEvent
 	/// Hashing speed in MB/s
 	double mHashingSpeed;
 };
+#endif
 
 struct RsFileTransferEvent: RsEvent
 {

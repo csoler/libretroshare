@@ -106,8 +106,13 @@ enum class RsEventType : uint32_t
 	/// @see RsMailTagEvent
 	MAIL_TAG                                                = 17,
 
-	/** Emitted to update library clients about file hashing being completed */
+    /// @see rspeers.h
+    SYSTEM                                                  = 18,
+
+#ifdef TO_REMOVE
+    /** Emitted to update library clients about file hashing being completed */
 	FILE_HASHING_COMPLETED                                  = 20,
+#endif
 
     /// @see rspeers.h
     TOR_MANAGER                                             = 21,
