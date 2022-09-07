@@ -194,8 +194,15 @@ bool RsDiscSpace::checkForDiscSpace(RsDiscSpace::DiscLocation loc)
 
 	bool res = _current_size[loc] > _size_limit_mb ;
 
-	if(_last_res[loc] && !res)
-		RsServer::notify()->notifyDiskFull(loc,_size_limit_mb) ;
+    if(_last_res[loc] && !res)
+        if(rsEvents)
+        {
+            auto ev = std::make_shared<RsSystemEvent>();
+            ev->mEventCode = RsSystemEventCode::DISK_FULL;
+            ev->mSizeLimit = _size_limit_mb;
+            ev->mLocation = loc;
+            rsEvents->postEvent(ev);
+        }
 
 	_last_res[loc] = res ;
 

@@ -209,7 +209,7 @@ public:
 
 	virtual void notifyListPreChange              (int /* list */, int /* type */) {}
 	virtual void notifyListChange                 (int /* list */, int /* type */) {}
-	virtual void notifyErrorMsg                   (int /* list */, int /* sev  */, std::string /* msg */) {}
+    //virtual void notifyErrorMsg                   (int /* list */, int /* sev  */, std::string /* msg */) {}
     //virtual void notifyChatMessage                (const ChatMessage& /* msg      */) {}
     //virtual void notifyChatStatus                 (const ChatId&      /* chat_id  */, const std::string& /* status_string */) {}
     //virtual void notifyCustomState                (const std::string& /* peer_id   */, const std::string&               /* status_string */) {}
@@ -222,7 +222,7 @@ public:
 	virtual void notifyPeerHasNewAvatar           (std::string        /* peer_id   */) {}
 	virtual void notifyOwnAvatarChanged           () {}
 	virtual void notifyOwnStatusMessageChanged    () {}
-	virtual void notifyDiskFull                   (uint32_t           /* location  */, uint32_t                         /* size limit in MB */) {}
+    //virtual void notifyDiskFull                   (uint32_t           /* location  */, uint32_t                         /* size limit in MB */) {}
 
 	/* one or more peers has changed the states */
 	virtual void notifyPeerStatusChangedSummary   () {}

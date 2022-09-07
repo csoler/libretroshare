@@ -28,6 +28,8 @@
 #include <chrono>
 #include <functional>
 
+#include "retroshare/rsdisc.h"
+
 #include "util/rsmemory.h"
 #include "util/rsurl.h"
 #include "serialiser/rsserializable.h"
@@ -205,6 +207,33 @@ public:
 };
 
 typedef uint32_t RsEventsHandlerId_t;
+
+// Specific class of events used overall
+
+enum class RsSystemEventCode: uint8_t {
+    UNKNOWN          = 0x00,
+    DISK_FULL        = 0x01,
+};
+
+struct RsSystemEvent: RsEvent
+{
+    RsSystemEvent() : RsEvent(RsEventType::SYSTEM), mEventCode(RsSystemEventCode::UNKNOWN) {}
+    ~RsSystemEvent() override = default;
+
+    RsSystemEventCode mEventCode;
+    uint32_t mLocation;
+    uint32_t mSizeLimit;
+
+    ///* @see RsEvent @see RsSerializable
+    void serial_process( RsGenericSerializer::SerializeJob j, RsGenericSerializer::SerializeContext& ctx ) override
+    {
+        RsEvent::serial_process(j, ctx);
+
+        RS_SERIAL_PROCESS(mEventCode);
+        RS_SERIAL_PROCESS(mLocation);
+        RS_SERIAL_PROCESS(mSizeLimit);
+    }
+};
 
 class RsEvents
 {
