@@ -189,9 +189,9 @@ class RS_DEPRECATED_FOR(RsEvents) RsNotify
 		/* Pull methods for retroshare-gui                   */
 		/* this should probably go into a different service. */
 		 
-		virtual bool NotifySysMessage(uint32_t &sysid, uint32_t &type, std::string &title, std::string &msg) = 0;
-		virtual bool NotifyPopupMessage(uint32_t &ptype, std::string &name, std::string &title, std::string &msg) = 0;
-		virtual bool NotifyLogMessage(uint32_t &sysid, uint32_t &type, std::string &title, std::string &msg) = 0;
+        virtual bool NotifySysMessage(uint32_t &sysid, uint32_t &type, std::string &title, std::string &msg) = 0;
+        virtual bool NotifyPopupMessage(uint32_t &ptype, std::string &name, std::string &title, std::string &msg) = 0;
+        virtual bool NotifyLogMessage(uint32_t &sysid, uint32_t &type, std::string &title, std::string &msg) = 0;
 
 		virtual bool GetFeedItem(RsFeedItem &item) = 0;
 
@@ -217,7 +217,7 @@ public:
     virtual void notifyChatLobbyCleared                (const ChatId&      /* chat_id  */) {}
     virtual void notifyChatLobbyEvent             (uint64_t           /* lobby id */, uint32_t           /* event type    */ ,const RsGxsId& /* nickname */,const std::string& /* any string */) {}
 	virtual void notifyChatLobbyTimeShift         (int                /* time_shift*/) {}
-	virtual void notifyHashingInfo                (uint32_t           /* type      */, const std::string&               /* fileinfo      */) {}
+    //virtual void notifyHashingInfo                (uint32_t           /* type      */, const std::string&               /* fileinfo      */) {}
 	virtual void notifyTurtleSearchResult         (const RsPeerId&    /* pid       */, uint32_t                         /* search_id     */, const std::list<TurtleFileInfo>& /* files         */) {}
 	virtual void notifyPeerHasNewAvatar           (std::string        /* peer_id   */) {}
 	virtual void notifyOwnAvatarChanged           () {}
@@ -228,8 +228,8 @@ public:
 	virtual void notifyPeerStatusChangedSummary   () {}
 	virtual void notifyDiscInfoChanged            () {}
 
-	virtual void notifyDownloadComplete           (const std::string& /* fileHash  */) {}
-	virtual void notifyDownloadCompleteCount      (uint32_t           /* count     */) {}
+    //virtual void notifyDownloadComplete           (const std::string& /* fileHash  */) {}
+    //virtual void notifyDownloadCompleteCount      (uint32_t           /* count     */) {}
 	virtual void notifyHistoryChanged             (uint32_t           /* msgId     */, int /* type */) {}
 
 	virtual bool askForPassword                   (const std::string& /* title     */, const std::string& /* key_details     */, bool               /* prev_is_bad */, std::string& /* password */,bool& /* cancelled */ ) { return false ;}

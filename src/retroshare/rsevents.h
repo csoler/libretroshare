@@ -28,8 +28,6 @@
 #include <chrono>
 #include <functional>
 
-#include "retroshare/rsdisc.h"
-
 #include "util/rsmemory.h"
 #include "util/rsurl.h"
 #include "serialiser/rsserializable.h"

@@ -69,9 +69,9 @@ class p3Notify: public RsNotify
         virtual bool unregisterNotifyClient(NotifyClient *nc) ;
 
 		/* Pull output methods for retroshare-gui */
-		virtual bool NotifySysMessage(uint32_t &sysid, uint32_t &type, std::string &title, std::string &msg);
-		virtual bool NotifyPopupMessage(uint32_t &ptype, std::string &name, std::string &title, std::string &msg);
-		virtual bool NotifyLogMessage(uint32_t &sysid, uint32_t &type, std::string &title, std::string &msg);
+        virtual bool NotifySysMessage(uint32_t &sysid, uint32_t &type, std::string &title, std::string &msg);
+        virtual bool NotifyPopupMessage(uint32_t &ptype, std::string &name, std::string &title, std::string &msg);
+        virtual bool NotifyLogMessage(uint32_t &sysid, uint32_t &type, std::string &title, std::string &msg);
 
 		virtual bool GetFeedItem(RsFeedItem &item);
 
@@ -114,8 +114,8 @@ class p3Notify: public RsNotify
 		void notifyPeerStatusChangedSummary   () ;
 		void notifyDiscInfoChanged            () ;
 
-		void notifyDownloadComplete           (const std::string& /* fileHash  */) ;
-		void notifyDownloadCompleteCount      (uint32_t           /* count     */) ;
+//		void notifyDownloadComplete           (const std::string& /* fileHash  */) ;
+//		void notifyDownloadCompleteCount      (uint32_t           /* count     */) ;
 		void notifyHistoryChanged             (uint32_t           /* msgId     */, int /* type */) ;
 
 		bool askForPassword                   (const std::string& title, const std::string& /* key_details     */, bool               /* prev_is_bad */, std::string&, bool *cancelled /* password */ ) ;
