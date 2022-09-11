@@ -59,7 +59,7 @@ enum class RsEventType : uint32_t
 	BROADCAST_DISCOVERY                                     = 1,
 
 	/// @see RsDiscPendingPgpReceivedEvent
-	GOSSIP_DISCOVERY                                        = 2,
+    GOSSIP_DISCOVERY                                        = 2,		// used for new profiles, PGP keys, etc. Profile level info.
 
 	/// @see AuthSSL
 	AUTHSSL_CONNECTION_AUTENTICATION                        = 3,
@@ -71,7 +71,7 @@ enum class RsEventType : uint32_t
 	GXS_CHANGES                                             = 5,
 
 	/// Emitted when a peer state changes, @see RsPeers
-	PEER_STATE_CHANGED                                      = 6,
+    PEER_STATUS_CHANGED                                     = 6,		// used for friend list, peer IP addresses, etc. Node level info.
 
 	/// @see RsMailStatusEvent
 	MAIL_STATUS                                             = 7,

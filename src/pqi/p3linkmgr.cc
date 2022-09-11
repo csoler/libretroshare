@@ -1295,6 +1295,15 @@ void    p3LinkMgrIMPL::peerStatus(const RsPeerId& id, const pqiIpAddrSet &addrs,
       } /****** STACK UNLOCK MUTEX *******/
 	
 	bool newAddrs = mPeerMgr->updateAddressList(id, addrs);
+
+    if(newAddrs && rsEvents)
+    {
+        auto ev = std::make_shared<RsPeerStatusChangeEvent>();
+        ev->mSslId = id;
+        ev->mEventCode = RsPeerStatusEventCode::PEER_ADDRESS_LIST_CHANGED;
+        rsEvents->postEvent(ev);
+    }
+
 	if (updateNetConfig)
 	{
 		mPeerMgr -> setVisState(id, peer_vs_disc, peer_vs_dht);

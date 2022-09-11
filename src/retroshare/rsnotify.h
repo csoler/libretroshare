@@ -219,14 +219,14 @@ public:
 	virtual void notifyChatLobbyTimeShift         (int                /* time_shift*/) {}
     //virtual void notifyHashingInfo                (uint32_t           /* type      */, const std::string&               /* fileinfo      */) {}
 	virtual void notifyTurtleSearchResult         (const RsPeerId&    /* pid       */, uint32_t                         /* search_id     */, const std::list<TurtleFileInfo>& /* files         */) {}
-	virtual void notifyPeerHasNewAvatar           (std::string        /* peer_id   */) {}
-	virtual void notifyOwnAvatarChanged           () {}
-	virtual void notifyOwnStatusMessageChanged    () {}
+    //virtual void notifyPeerHasNewAvatar           (std::string        /* peer_id   */) {}
+    //virtual void notifyOwnAvatarChanged           () {}
+    //virtual void notifyOwnStatusMessageChanged    () {}
     //virtual void notifyDiskFull                   (uint32_t           /* location  */, uint32_t                         /* size limit in MB */) {}
 
 	/* one or more peers has changed the states */
-	virtual void notifyPeerStatusChangedSummary   () {}
-	virtual void notifyDiscInfoChanged            () {}
+    //virtual void notifyPeerStatusChangedSummary   () {}
+    //virtual void notifyDiscInfoChanged            () {}
 
     //virtual void notifyDownloadComplete           (const std::string& /* fileHash  */) {}
     //virtual void notifyDownloadCompleteCount      (uint32_t           /* count     */) {}

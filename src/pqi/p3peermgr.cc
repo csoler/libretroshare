@@ -1935,10 +1935,7 @@ bool    p3PeerMgrIMPL::updateAddressList(const RsPeerId& id, const pqiIpAddrSet 
 
 	/* check if it is our own ip */
 	if (id == getOwnId())
-	{
-        mOwnState.ipAddrs.updateAddrs(clean_set);
-		return true;
-	}
+        return  mOwnState.ipAddrs.updateAddrs(clean_set);
 
 	/* check if it is a friend */
 	std::map<RsPeerId, peerState>::iterator it;
@@ -1952,10 +1949,15 @@ bool    p3PeerMgrIMPL::updateAddressList(const RsPeerId& id, const pqiIpAddrSet 
 
 	/* "it" points to peer */
 
+    bool changed = false;
+
 	if(!am_I_a_hidden_node)
-		it->second.ipAddrs.updateAddrs(clean_set);
+        changed = it->second.ipAddrs.updateAddrs(clean_set);
 	else
+    {
+        changed = !it->second.ipAddrs.empty() ;
 		it->second.ipAddrs.clear();
+    }
 
 #ifdef PEER_DEBUG
 	std::cerr << "p3PeerMgrIMPL::setLocalAddress() Updated Address for: " << id;
@@ -1968,7 +1970,7 @@ bool    p3PeerMgrIMPL::updateAddressList(const RsPeerId& id, const pqiIpAddrSet 
 
     IndicateConfigChanged(RsConfigMgr::CheckPriority::SAVE_LESS); /**** INDICATE MSG CONFIG CHANGED! *****/
 
-	return true;
+    return changed;
 }
 
 

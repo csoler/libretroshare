@@ -279,7 +279,7 @@ void p3StatusService::receiveStatusQueue()
             }
         }
 
-		RsServer::notify()->notifyPeerStatusChangedSummary();
+        //RsServer::notify()->notifyPeerStatusChangedSummary();
 	}
 }
 
@@ -457,9 +457,10 @@ void p3StatusService::statusChange(const std::list<pqiServicePeer> &plist)
 
 		}
 	}
-
+#ifdef TO_REMOVE
 	if (changedState)
 	{
 		RsServer::notify()->notifyPeerStatusChangedSummary();
 	}
+#endif
 }

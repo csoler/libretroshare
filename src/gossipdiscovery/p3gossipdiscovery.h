@@ -171,8 +171,8 @@ private:
 	void addFriend(const RsPeerId &sslId);
 	void removeFriend(const RsPeerId &sslId);
 
-	void updatePeerAddresses(const RsDiscContactItem *item);
-	void updatePeerAddressList(const RsDiscContactItem *item);
+    bool updatePeerAddresses(const RsDiscContactItem *item);
+    bool updatePeerAddressList(const RsDiscContactItem *item);
 
 	void sendOwnContactInfo(const RsPeerId &sslid);
 	void recvOwnContactInfo(const RsPeerId &fromId, const RsDiscContactItem *item);

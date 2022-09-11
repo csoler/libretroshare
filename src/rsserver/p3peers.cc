@@ -133,10 +133,12 @@ bool p3Peers::FriendsChanged(const RsPeerId& pid,bool add)
 #endif
     if(rsEvents)
     {
-        auto ev = std::make_shared<RsPeerStateChangedEvent>(pid);
+        auto ev = std::make_shared<RsPeerStatusChangeEvent>();
+        ev->mEventCode = add?(RsPeerStatusEventCode::PEER_ADDED):(RsPeerStatusEventCode::PEER_REMOVED);
+        ev->mSslId = pid;
         rsEvents->postEvent(ev);
     }
-    RsServer::notify()->notifyListChange(NOTIFY_LIST_FRIENDS, add? NOTIFY_TYPE_ADD : NOTIFY_TYPE_DEL); // this is meant to disappear
+    //RsServer::notify()->notifyListChange(NOTIFY_LIST_FRIENDS, add? NOTIFY_TYPE_ADD : NOTIFY_TYPE_DEL); // this is meant to disappear
 
     /* TODO */
     return false;
@@ -1836,9 +1838,6 @@ void p3Peers::setServicePermissionFlags(const RsPgpId& gpg_id,const ServicePermi
 {
 	mPeerMgr->setServicePermissionFlags(gpg_id,flags) ;
 }
-
-RsPeerStateChangedEvent::RsPeerStateChangedEvent(RsPeerId sslId) :
-    RsEvent(RsEventType::PEER_STATE_CHANGED), mSslId(sslId) {}
 
 RsPeers::~RsPeers() = default;
 RsAuthSslConnectionAutenticationEvent::~RsAuthSslConnectionAutenticationEvent() = default;

@@ -71,6 +71,8 @@ class pqiIpAddrSet
 		mLocal.mAddrs.clear();
 		mExt.mAddrs.clear();
 	}
+
+    bool empty() const { return mLocal.mAddrs.empty() && mExt.mAddrs.empty() ; }
 };
 
 	

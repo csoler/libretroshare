@@ -495,11 +495,24 @@ struct RsGroupInfo : RsSerializable
 	}
 };
 
+enum class RsPeerStatusEventCode: uint8_t
+{
+    UNKNOWN               		= 0x00,
+    PEER_AVATAR_CHANGED   		= 0x01,
+    PEER_STATUS_MESSAGE_CHANGED = 0x02,
+    PEER_SERVICES_CHANGED       = 0x03,
+    PEER_ADDED                  = 0x04,
+    PEER_REMOVED                = 0x05,
+    PEER_ADDRESS_LIST_CHANGED   = 0x06,
+};
+
 /** Event emitted when a peer change state */
-struct RsPeerStateChangedEvent : RsEvent
+struct RsPeerStatusChangeEvent : RsEvent
 {
 	/// @param[in] sslId is of the peer which changed state
-	explicit RsPeerStateChangedEvent(RsPeerId sslId);
+    RsPeerStatusChangeEvent() : RsEvent(RsEventType::PEER_STATUS_CHANGED) {}
+
+    RsPeerStatusEventCode mEventCode;
 
 	/// Storage fot the id of the peer that changed state
 	RsPeerId mSslId;
@@ -508,8 +521,9 @@ struct RsPeerStateChangedEvent : RsEvent
 	                     RsGenericSerializer::SerializeContext& ctx) override
 	{
 		RsEvent::serial_process(j, ctx);
-		RS_SERIAL_PROCESS(mSslId);
-	}
+        RS_SERIAL_PROCESS(mEventCode);
+        RS_SERIAL_PROCESS(mSslId);
+    }
 };
 
 enum class RetroshareInviteFlags:uint32_t {

@@ -619,7 +619,16 @@ void p3ChatService::handleRecvChatAvatarItem(RsChatAvatarItem *ca)
 #ifdef CHAT_DEBUG
 	std::cerr << "Received avatar data for peer " << ca->PeerId() << ". Notifying." << std::endl ;
 #endif
-	RsServer::notify()->notifyPeerHasNewAvatar(ca->PeerId().toStdString()) ;
+    //RsServer::notify()->notifyPeerHasNewAvatar(ca->PeerId().toStdString()) ;
+
+    if(rsEvents)
+    {
+        auto ev = std::make_shared<RsPeerStatusChangeEvent>();
+        ev->mEventCode = RsPeerStatusEventCode::PEER_AVATAR_CHANGED;
+        ev->mSslId = ca->PeerId();
+        rsEvents->postEvent(ev);
+    }
+
 }
 
 uint32_t p3ChatService::getMaxMessageSecuritySize(int type)
@@ -1084,8 +1093,9 @@ void p3ChatService::setOwnCustomStateString(const std::string& s)
 
     if(rsEvents)
     {
-        auto ev = std::make_shared<RsChatMessageEvent>();
-        ev->mEventCode = RsChatMessageEventCode::OWN_STATUS_CHANGED;
+        auto ev = std::make_shared<RsPeerStatusChangeEvent>();
+        ev->mEventCode = RsPeerStatusEventCode::PEER_STATUS_MESSAGE_CHANGED;
+        ev->mSslId = rsPeers->getOwnId();
         rsEvents->postEvent(ev);
     }
 
@@ -1127,7 +1137,15 @@ void p3ChatService::setOwnAvatarJpegData(const unsigned char *data,int size)
 	}
 	IndicateConfigChanged();
 
-	RsServer::notify()->notifyOwnAvatarChanged() ;
+    if(rsEvents)
+    {
+        auto fe = std::make_shared<RsPeerStatusChangeEvent>();
+        fe->mEventCode = RsPeerStatusEventCode::PEER_AVATAR_CHANGED;
+        fe->mSslId = rsPeers->getOwnId();
+        rsEvents->sendEvent(fe);
+    }
+
+    // RsServer::notify()->notifyOwnAvatarChanged() ;
 
 #ifdef CHAT_DEBUG
 	std::cerr << "p3chatservice:setOwnAvatarJpegData() done." << std::endl ;

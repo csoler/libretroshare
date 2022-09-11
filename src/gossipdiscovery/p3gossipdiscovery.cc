@@ -488,24 +488,24 @@ void p3discovery2::recvIdentityList(const RsPeerId& pid,const std::list<RsGxsId>
     }
 }
 
-void p3discovery2::updatePeerAddresses(const RsDiscContactItem *item)
+bool p3discovery2::updatePeerAddresses(const RsDiscContactItem *item)
 {
 	if (item->isHidden)
-		mPeerMgr->setHiddenDomainPort(item->sslId, item->hiddenAddr,
-		                              item->hiddenPort);
+        mPeerMgr->setHiddenDomainPort(item->sslId, item->hiddenAddr, item->hiddenPort);
 	else
 	{
 		mPeerMgr->setDynDNS(item->sslId, item->dyndns);
 		updatePeerAddressList(item);
 	}
+    return true;
 }
 
-void p3discovery2::updatePeerAddressList(const RsDiscContactItem *item)
+bool p3discovery2::updatePeerAddressList(const RsDiscContactItem *item)
 {
 	if (item->isHidden)
-	{
-	}
-	else if(!mPeerMgr->isHiddenNode(rsPeers->getOwnId()))
+        return false;
+
+    if(!mPeerMgr->isHiddenNode(rsPeers->getOwnId()))
 	{
 		/* Cyril: we don't store IP addresses if we're a hidden node.
 		 * Normally they should not be sent to us, except for old peers. */
@@ -530,8 +530,9 @@ void p3discovery2::updatePeerAddressList(const RsDiscContactItem *item)
 		std::cerr << addrstr;
 		std::cerr << std::endl;
 #endif
-		mPeerMgr->updateAddressList(item->sslId, addrsFromPeer);
+        return mPeerMgr->updateAddressList(item->sslId, addrsFromPeer);
 	}
+    return false;
 }
 
 // Starts the Discovery process.
@@ -962,7 +963,7 @@ void p3discovery2::processContactInfo(const RsPeerId &fromId, const RsDiscContac
 		return;
 	}
 
-    // The peer the discovery info is about is a friend. We gather the nodes for that profile into the local structure and notify p3peerMgr.
+    // The peer the discovery info it is about, is a friend. We gather the nodes for that profile into the local structure and notify p3peerMgr.
 
     if(!rsPeers->isGPGAccepted(item->pgpId))  // this is an additional check, because the friendship previously depends on the local cache. We need
 		return ;                              // fresh information here.
@@ -999,24 +1000,31 @@ void p3discovery2::processContactInfo(const RsPeerId &fromId, const RsDiscContac
 		                     time(NULL) - RS_PEER_OFFLINE_NO_DISC - 1,
 		                     RS_NODE_PERM_ALL );
 
-		updatePeerAddresses(item);
-	}
-	updatePeerAddressList(item);
-
-	RsServer::notify()->notifyListChange(NOTIFY_LIST_NEIGHBOURS, NOTIFY_TYPE_MOD);
-
-	if(should_notify_discovery)
-    {
-        RsServer::notify()->notifyDiscInfoChanged();
-
         if(rsEvents)
         {
-            auto ev = std::make_shared<RsGossipDiscoveryEvent>();
-            ev->mGossipDiscoveryEventType = RsGossipDiscoveryEventType::FRIEND_PEER_INFO_RECEIVED;
-            ev->mFromId = fromId;
-            ev->mAboutId = item->sslId;
+            auto ev = std::make_shared<RsPeerStatusChangeEvent>();
+            ev->mSslId = item->sslId;
+            ev->mEventCode = RsPeerStatusEventCode::PEER_ADDED;
             rsEvents->postEvent(ev);
         }
+	}
+
+    if(updatePeerAddressList(item))
+        if(rsEvents)
+        {
+            auto ev = std::make_shared<RsPeerStatusChangeEvent>();
+            ev->mEventCode = RsPeerStatusEventCode::PEER_ADDRESS_LIST_CHANGED;
+            ev->mSslId = item->sslId;
+            rsEvents->postEvent(ev);
+        }
+
+    if(rsEvents)
+    {
+        auto ev = std::make_shared<RsGossipDiscoveryEvent>();
+        ev->mGossipDiscoveryEventType = RsGossipDiscoveryEventType::PROFILES_CHANGED;
+        ev->mFromId = fromId;
+        ev->mAboutId = item->sslId;
+        rsEvents->postEvent(ev);
     }
 }
 

@@ -503,7 +503,7 @@ struct ChatMessage : RsSerializable
 enum class RsChatMessageEventCode: uint8_t {
     UNKNOWN                                 = 0x00,
     NEW_MESSAGE_RECEIVED                    = 0x01,
-    PEER_CHAT_STATUS_CHANGED                = 0x02, // peer is ONLINE vs. OFFLINE
+    PEER_CHAT_STATUS_CHANGED                = 0x02, // peer is OFFLINE, AWAY, BUSY, IDLE,...
     PEER_CUSTOM_STATE_CHANGED               = 0x03, // peer custom state message
     PEER_IS_TYPING                          = 0x04, // used to display typing status
     OWN_STATUS_CHANGED                      = 0x05,
