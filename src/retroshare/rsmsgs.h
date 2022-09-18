@@ -87,6 +87,7 @@
 #define RS_CHAT_TYPE_PRIVATE 2
 #define RS_CHAT_TYPE_LOBBY   3
 #define RS_CHAT_TYPE_DISTANT 4
+#define RS_CHAT_TYPE_HISTORY 5
 
 const ChatLobbyFlags RS_CHAT_LOBBY_FLAGS_AUTO_SUBSCRIBE( 0x00000001 ) ;
 const ChatLobbyFlags RS_CHAT_LOBBY_FLAGS_deprecated    ( 0x00000002 ) ;
@@ -503,15 +504,20 @@ struct ChatMessage : RsSerializable
 enum class RsChatMessageEventCode: uint8_t {
     UNKNOWN                                 = 0x00,
     NEW_MESSAGE_RECEIVED                    = 0x01,
+
     PEER_CHAT_STATUS_CHANGED                = 0x02, // peer is OFFLINE, AWAY, BUSY, IDLE,...
     PEER_CUSTOM_STATE_CHANGED               = 0x03, // peer custom state message
     PEER_IS_TYPING                          = 0x04, // used to display typing status
+
     OWN_STATUS_CHANGED                      = 0x05,
+
     CHAT_FONTS_CHANGED                      = 0x06,
-    DISTANT_CHAT_CONNECTION_REFUSED         = 0x07,
-    DISTANT_CHAT_CONNECTION_OK              = 0x08,
-    DISTANT_CHAT_CONNECTION_NONE            = 0x09,
-    DISTANT_CHAT_CONNECTION_REMOTELY_CLOSED = 0x0a,
+    CHAT_STYLE_CHANGED                      = 0x07,
+
+    DISTANT_CHAT_CONNECTION_REFUSED         = 0x08,
+    DISTANT_CHAT_CONNECTION_OK              = 0x09,
+    DISTANT_CHAT_CONNECTION_NONE            = 0x0a,
+    DISTANT_CHAT_CONNECTION_REMOTELY_CLOSED = 0x0b,
 };
 
 struct RsChatMessageEvent : RsEvent
@@ -532,12 +538,14 @@ struct RsChatMessageEvent : RsEvent
         RS_SERIAL_PROCESS(mChatMessage);
         RS_SERIAL_PROCESS(mStatusString);
         RS_SERIAL_PROCESS(mPeerStatus);
+        RS_SERIAL_PROCESS(mStyleType);
     }
 
     RsChatMessageEventCode  mEventCode;
     ChatMessage             mChatMessage;
     std::string 			mStatusString;
     int						mPeerStatus;
+    int						mStyleType;
 };
 
 
