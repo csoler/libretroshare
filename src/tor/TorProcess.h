@@ -132,6 +132,8 @@ private:
 
     RsFdBinInterface *mStdOutFD;
     RsFdBinInterface *mStdErrFD;
+
+    int mFd[3];  // File descriptors array used to talk to the child process.
 };
 
 }

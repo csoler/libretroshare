@@ -915,8 +915,5 @@ TorManager *RsTor::instance()
     assert(getpid() == syscall(SYS_gettid));// make sure we're not in a thread
 #endif
 
-    if(rsTor == nullptr)
-        rsTor = new TorManager;
-
-    return rsTor;
+    return TorManager::instance();
 }

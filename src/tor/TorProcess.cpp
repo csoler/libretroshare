@@ -216,7 +216,7 @@ int popen3(int fd[3],const std::vector<std::string>& args,TorProcessHandle& pid)
         if(pid)
         {
             // parent
-            fd[STDIN_FILENO] = p[STDIN_FILENO][1];
+            fd[STDIN_FILENO] = p[STDIN_FILENO][1];     // fd[stdin] of the parent is the write part of the pipe
             close(p[STDIN_FILENO][0]);
             fd[STDOUT_FILENO] = p[STDOUT_FILENO][0];
             close(p[STDOUT_FILENO][1]);
@@ -229,8 +229,8 @@ int popen3(int fd[3],const std::vector<std::string>& args,TorProcessHandle& pid)
         {
             RsErr() << "Launching sub-process..." ;
             // child
-            dup2(p[STDIN_FILENO][0],STDIN_FILENO);
-            close(p[STDIN_FILENO][1]);
+            dup2(p[STDIN_FILENO][0],STDIN_FILENO);	// closes stdin of the child, and replaces it with the read part of the pipe
+            close(p[STDIN_FILENO][1]);				// close the write part of the pipe in the child
             dup2(p[STDOUT_FILENO][1],STDOUT_FILENO);
             close(p[STDOUT_FILENO][0]);
             dup2(p[STDERR_FILENO][1],STDERR_FILENO);
@@ -337,20 +337,18 @@ void TorProcess::start()
     for(auto s:mExtraSettings)
         args.push_back(s);
 
-    int fd[3];  // File descriptors array
-
-    if(popen3(fd,args,mTorProcessId))
+    if(popen3(mFd,args,mTorProcessId))
     {
         RsErr() << "Could not start Tor process. errno=" << errno ;
         mState = Failed;
         return;	// stop the control thread
     }
 
-    RsFileUtil::set_fd_nonblock(fd[STDOUT_FILENO]);
-    RsFileUtil::set_fd_nonblock(fd[STDERR_FILENO]);
+    RsFileUtil::set_fd_nonblock(mFd[STDOUT_FILENO]);
+    RsFileUtil::set_fd_nonblock(mFd[STDERR_FILENO]);
 
-    mStdOutFD = new RsFdBinInterface(fd[STDOUT_FILENO], false);
-    mStdErrFD = new RsFdBinInterface(fd[STDERR_FILENO], false);
+    mStdOutFD = new RsFdBinInterface(mFd[STDOUT_FILENO], false);
+    mStdErrFD = new RsFdBinInterface(mFd[STDERR_FILENO], false);
 }
 
 void TorProcess::tick()
@@ -404,6 +402,11 @@ void TorProcess::stop()
 #endif
 
     RsInfo() << "Tor process has been normally terminated. Exiting.";
+
+    // close file descriptors
+    close(mFd[STDIN_FILENO]);
+    close(mFd[STDOUT_FILENO]);
+    close(mFd[STDERR_FILENO]);
 
     mState = NotStarted;
 
