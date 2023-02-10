@@ -140,7 +140,8 @@ struct RsGxsChannelEvent: RsEvent
 		RS_SERIAL_PROCESS(mChannelEventCode);
 		RS_SERIAL_PROCESS(mChannelGroupId);
 		RS_SERIAL_PROCESS(mChannelMsgId);
-	}
+        RS_SERIAL_PROCESS(mChannelThreadId);
+    }
 };
 
 // This event is used to factor multiple search results notifications in a single event.
