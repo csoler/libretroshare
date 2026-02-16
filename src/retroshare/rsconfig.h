@@ -199,27 +199,31 @@ struct RsConfigDataRates : RsSerializable
 
 struct RSTrafficClue : RsSerializable
 {
-    rstime_t     TS ;
+    rstime_t   TS ;
     uint32_t   size ;
+    uint64_t   cumulated_size ;
     uint8_t    priority ;
     uint16_t   service_id ;
     uint8_t    service_sub_id ;
     RsPeerId   peer_id ;
     uint32_t   count ;
+    uint64_t   cumulated_count ;
 
-    RSTrafficClue() { TS=0;size=0;service_id=0;service_sub_id=0; count=0; }
-    RSTrafficClue& operator+=(const RSTrafficClue& tc) { size += tc.size; count += tc.count ; return *this ;}
+    RSTrafficClue() { TS=0;size=0;cumulated_size=0;service_id=0;service_sub_id=0; count=0; }
+    RSTrafficClue& operator+=(const RSTrafficClue& tc) { size += tc.size; cumulated_size += tc.cumulated_size; count += tc.count ; cumulated_count += tc.cumulated_count; return *this ;}
 
 	// RsSerializable interface
 	void serial_process(RsGenericSerializer::SerializeJob j, RsGenericSerializer::SerializeContext &ctx) {
 		RS_SERIAL_PROCESS(TS);
 		RS_SERIAL_PROCESS(size);
-		RS_SERIAL_PROCESS(priority);
+        RS_SERIAL_PROCESS(cumulated_size);
+        RS_SERIAL_PROCESS(priority);
 		RS_SERIAL_PROCESS(service_id);
 		RS_SERIAL_PROCESS(service_sub_id);
 		RS_SERIAL_PROCESS(peer_id);
 		RS_SERIAL_PROCESS(count);
-	}
+        RS_SERIAL_PROCESS(cumulated_count);
+    }
 };
 
 struct RsConfigNetStatus : RsSerializable

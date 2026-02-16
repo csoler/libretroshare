@@ -488,6 +488,7 @@ void pqistreamer::locked_addTrafficClue(const RsItem *pqi,uint32_t pktsize,std::
     RSTrafficClue tc ;
     tc.TS = now ;
     tc.size = pktsize ;
+    tc.cumulated_size += pktsize ;
     tc.priority = pqi->priority_level() ;
     tc.peer_id = pqi->PeerId() ;
     tc.count = 1 ;
