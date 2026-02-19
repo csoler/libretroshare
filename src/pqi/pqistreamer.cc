@@ -120,8 +120,9 @@ pqistreamer::pqistreamer(RsSerialiser *rss, const RsPeerId& id, BinInterface *bi
 	mIncomingSize = 0 ;
 	mIncomingSize_bytes = 0;
 
-	mStatisticsTimeStamp = 0 ;
-	/* allocated once */
+    mStatisticsTimeStamp_In = 0 ;
+    mStatisticsTimeStamp_Out = 0 ;
+    /* allocated once */
 	mPkt_rpend_size = 0;
 	mPkt_rpending = 0;
 	mReading_state = reading_state_initial ;
@@ -411,7 +412,7 @@ int	pqistreamer::queue_outpqi_locked(RsItem *pqi,uint32_t& pktsize)
     	// keep info for stats for a while. Only keep the items for the last two seconds. sec n is ongoing and second n-1
     	// is a full statistics chunk that can be used in the GUI
 
-    	locked_addTrafficClue(pqi,pktsize,mCurrentStatsChunk_Out) ;
+        locked_addTrafficClue(pqi,pktsize,false) ;
 
         /*******************************************************************************************/
 
@@ -464,38 +465,42 @@ int 	pqistreamer::handleincomingitem(RsItem *pqi,int len)
 	// is a full statistics chunk that can be used in the GUI
 	{
 		RsStackMutex stack(mStreamerMtx); /**** LOCKED MUTEX ****/
-		locked_addTrafficClue(pqi,len,mCurrentStatsChunk_In) ;
+        locked_addTrafficClue(pqi,len,true) ;
 	}
 	/*******************************************************************************************/
 
 	return 1;
 }
 
-void pqistreamer::locked_addTrafficClue(const RsItem *pqi,uint32_t pktsize,std::list<RSTrafficClue>& lst)
+void pqistreamer::locked_addTrafficClue(const RsItem *pqi,uint32_t pktsize,bool in)
 {
+    auto& statistics_timestamp(in?mStatisticsTimeStamp_In:mStatisticsTimeStamp_Out);
+    auto& current_list        (in?mCurrentStatsChunk_In  :mCurrentStatsChunk_Out  );
+    auto& previous_list       (in?mPreviousStatsChunk_In :mPreviousStatsChunk_Out );
+
     rstime_t now = time(NULL) ;
+    uint64_t last_cumulated_count = current_list.empty()?0:current_list.back().cumulated_count;
+    uint64_t last_cumulated_size = current_list.empty()?0:current_list.back().cumulated_size;
 
-    if(now > mStatisticsTimeStamp)	// new chunk => get rid of oldest, replace old list by current list, clear current list.
+    if(now > statistics_timestamp)	// new chunk => get rid of oldest, replace old list by current list, clear current list.
     {
-	    mPreviousStatsChunk_Out = mCurrentStatsChunk_Out ;
-	    mPreviousStatsChunk_In = mCurrentStatsChunk_In ;
-	    mCurrentStatsChunk_Out.clear() ;
-	    mCurrentStatsChunk_In.clear() ;
-
-	    mStatisticsTimeStamp = now ;
+        previous_list = current_list ;
+        current_list.clear() ;
+        statistics_timestamp = now ;
     }
 
     RSTrafficClue tc ;
     tc.TS = now ;
     tc.size = pktsize ;
-    tc.cumulated_size += pktsize ;
+    tc.cumulated_size = pktsize + last_cumulated_size ;
     tc.priority = pqi->priority_level() ;
     tc.peer_id = pqi->PeerId() ;
     tc.count = 1 ;
+    tc.cumulated_count = 1 + last_cumulated_count ;
     tc.service_id = pqi->PacketService() ;
     tc.service_sub_id = pqi->PacketSubType() ;
 
-    lst.push_back(tc) ;
+    current_list.push_back(tc) ;
 }
 
 rstime_t	pqistreamer::getLastIncomingTS()

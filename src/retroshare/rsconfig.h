@@ -209,7 +209,7 @@ struct RSTrafficClue : RsSerializable
     uint32_t   count ;
     uint64_t   cumulated_count ;
 
-    RSTrafficClue() { TS=0;size=0;cumulated_size=0;service_id=0;service_sub_id=0; count=0; }
+    RSTrafficClue() { TS=0;size=0;cumulated_size=0;service_id=0;service_sub_id=0; count=0; cumulated_count=0; }
     RSTrafficClue& operator+=(const RSTrafficClue& tc) { size += tc.size; cumulated_size += tc.cumulated_size; count += tc.count ; cumulated_count += tc.cumulated_count; return *this ;}
 
 	// RsSerializable interface
